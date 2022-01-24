@@ -5,7 +5,7 @@
  * Created on January 23, 2022, 8:18 PM
  */
 
-
+//
 #include "xc.h"
 #include "tajmeri.h"
 #include "driverGLCD.h"
