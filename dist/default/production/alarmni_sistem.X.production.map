@@ -430,7 +430,7 @@ __RESERVED2
 
 __FGS             0xf8000a          0x2
  *(__FGS.sec*)
- __FGS.sec        0xf8000a          0x2 /CW/_FGS†4ﬂ
+ __FGS.sec        0xf8000a          0x2 /CW/_FGSP‰Ã
                   0xf8000a                  __FGS.sec
 
 __FICD
@@ -445,20 +445,20 @@ userdata
 .comment
  *(.comment)
 
-.debug_info       0x000000       0x2e5b
+.debug_info       0x000000       0x2e43
  *(.debug_info)
- .debug_info      0x000000        0xd76 build/default/production/main.o
- .debug_info      0x000d76        0xb9f build/default/production/adc.o
- .debug_info      0x001915        0x599 build/default/production/tajmeri.o
- .debug_info      0x001eae        0xfad build/default/production/driverGLCD.o
+ .debug_info      0x000000        0xd5e build/default/production/main.o
+ .debug_info      0x000d5e        0xb9f build/default/production/adc.o
+ .debug_info      0x0018fd        0x599 build/default/production/tajmeri.o
+ .debug_info      0x001e96        0xfad build/default/production/driverGLCD.o
  *(.gnu.linkonce.wi.*)
 
-.debug_abbrev     0x000000        0x4b0
+.debug_abbrev     0x000000        0x498
  *(.debug_abbrev)
- .debug_abbrev    0x000000        0x1a0 build/default/production/main.o
- .debug_abbrev    0x0001a0         0xc5 build/default/production/adc.o
- .debug_abbrev    0x000265         0xc5 build/default/production/tajmeri.o
- .debug_abbrev    0x00032a        0x186 build/default/production/driverGLCD.o
+ .debug_abbrev    0x000000        0x188 build/default/production/main.o
+ .debug_abbrev    0x000188         0xc5 build/default/production/adc.o
+ .debug_abbrev    0x00024d         0xc5 build/default/production/tajmeri.o
+ .debug_abbrev    0x000312        0x186 build/default/production/driverGLCD.o
 
 .debug_line       0x000000        0x626
  *(.debug_line)
@@ -1211,7 +1211,7 @@ LOAD c:/program files/microchip/xc16/v1.70/bin/bin/../../lib\libm-elf.a
 LOAD c:/program files/microchip/xc16/v1.70/bin/bin/../../lib\liblega-c-elf.a
 END GROUP
 OUTPUT(dist/default/production/alarmni_sistem.X.production.elf elf32-pic30)
-LOAD /CW/_FGS†4ﬂ
+LOAD /CW/_FGSP‰Ã
 LOAD default_isr
 LOAD data_init
 

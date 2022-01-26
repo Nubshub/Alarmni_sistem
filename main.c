@@ -9,6 +9,7 @@
 #include "xc.h"
 #include "tajmeri.h"
 #include "driverGLCD.h"
+#include "adc.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include<p30fxxxx.h>
