@@ -140,11 +140,9 @@ int main(void) {
     TRISBbits.TRISB6 = 0; //izlaz
     
     //test pinovi stanja
-    ADPCFGbits.PCFG7 = 1; //digitalni
     ADPCFGbits.PCFG8 = 1; //digitalni
     ADPCFGbits.PCFG9 = 1; //digitalni
     ADPCFGbits.PCFG12 = 1; //digitalni
-    TRISBbits.TRISB7 = 0; //izlaz
     TRISBbits.TRISB8 = 0; //izlaz
     TRISBbits.TRISB9 = 0; //izlaz
     TRISBbits.TRISB12 = 0; //izlaz
@@ -168,8 +166,8 @@ int main(void) {
                 break;
                 
             case ready:
-                LATBbits.LATB7 = 1;
-                if(sirovi0 > 3300)
+                LATFbits.LATF6 = 1;
+                if(sirovi0 > 3300)//fotootpornik
                 stanje = brojac;
                 //implementirati touch screen aktiviraj
                 break;
@@ -177,22 +175,23 @@ int main(void) {
             case brojac:
                 
                 
-                LATBbits.LATB7 = 0;
+                LATFbits.LATF6 = 0;
                 Delay_ms(1000);
                 //GLCD_DisplayPicture(tri); 
-                LATBbits.LATB7 = 1;
+                LATFbits.LATF6 = 1;
                 Delay_ms(1000);
-                LATBbits.LATB7 = 0;
+                LATFbits.LATF6 = 0;
                 Delay_ms(1000);
                 //GLCD_DisplayPicture(dva);
-                LATBbits.LATB7 = 1;
+                LATFbits.LATF6 = 1;
                 Delay_ms(1000);
-                LATBbits.LATB7 = 0;
+                LATFbits.LATF6 = 0;
                 Delay_ms(1000);
                 //GLCD_DisplayPicture(jedan);
-                LATBbits.LATB7 = 1;
+                LATFbits.LATF6 = 1;
                 Delay_ms(1000);
-                LATBbits.LATB7 = 0;
+                LATFbits.LATF6 = 0;
+                Delay_ms(1000);
                 
                 stanje = aktivan;
                 break;
