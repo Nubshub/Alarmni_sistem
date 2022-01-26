@@ -7,6 +7,7 @@
       <itemPath>adc.h</itemPath>
       <itemPath>tajmeri.h</itemPath>
       <itemPath>driverGLCD.h</itemPath>
+      <itemPath>slike.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
