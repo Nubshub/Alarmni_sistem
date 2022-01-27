@@ -105,7 +105,7 @@ bit 0 ALTS: Alternate Input Sample Mode Select bit
 
 ADCON2bits.VCFG=7;
 ADCON2bits.CSCNA=1;
-ADCON2bits.SMPI=1;
+ADCON2bits.SMPI=3;
 ADCON2bits.BUFM=0;
 ADCON2bits.ALTS=0;
 
@@ -165,6 +165,8 @@ bit 15-0 PCFG<15:0>: Analog Input Pin Configuration Control bits
 	1 = Analog input pin in Digital mode, port read input enabled, A/D input multiplexer input connected to AVSS
 	0 = Analog input pin in Analog mode, port read input disabled, A/D samples pin voltage*/
 
+ADPCFGbits.PCFG8 = 0; 
+ADPCFGbits.PCFG9 = 0; 
 ADPCFGbits.PCFG10 = 0; 
 ADPCFGbits.PCFG11 = 0;
 
@@ -175,7 +177,7 @@ bit 15-0 CSSL<15:0>: A/D Input Pin Scan Selection bits
 	1 = Select ANx for input scan
 	0 = Skip ANx for input scan*/
 //ADCSSL=0b0001111111111111;
-  ADCSSL=0b0000110000000000;
+  ADCSSL=0b0000111100000000;
 ADCON1bits.ASAM=1;
 
 IFS0bits.ADIF=1;

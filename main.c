@@ -15,6 +15,9 @@
 #include <stdlib.h>
 #include<p30fxxxx.h>
 
+#define DRIVE_A PORTCbits.RC13
+#define DRIVE_B PORTCbits.RC14
+
 _FOSC(CSW_FSCM_OFF & XT_PLL4);//instruction takt je isti kao i kristal
 _FWDT(WDT_OFF);
 _FGS(CODE_PROT_OFF);
@@ -22,9 +25,66 @@ _FGS(CODE_PROT_OFF);
 enum state {init, ready, brojac, aktivan, sirena, vrata, z_vrata };
 enum state stanje = init;
 
-unsigned int sirovi0,sirovi1,stoperica, i;
+unsigned int sirovi0,sirovi1,sirovi2,sirovi3,stoperica, i;
+unsigned int X, Y,x_vrednost, y_vrednost;
 
 
+//const unsigned int ADC_THRESHOLD = 900; 
+const unsigned int AD_Xmin =220;
+const unsigned int AD_Xmax =3642;
+const unsigned int AD_Ymin =520;
+const unsigned int AD_Ymax =3450;
+
+unsigned int broj,broj1,broj2,temp0,temp1; 
+
+
+void ConfigureTSPins(void)
+{
+
+	TRISCbits.TRISC13=0;
+    TRISCbits.TRISC14=0;
+
+}
+
+void Touch_Panel (void)
+{
+// vode horizontalni tranzistori
+	DRIVE_A = 1;  
+	DRIVE_B = 0;
+    
+     LATCbits.LATC13=1;
+     LATCbits.LATC14=0;
+
+	Delay_ms(50); //cekamo jedno vreme da se odradi AD konverzija
+				
+	// ocitavamo x	
+	x_vrednost = temp0;//temp0 je vrednost koji nam daje AD konvertor na BOTTOM pinu		
+
+	// vode vertikalni tranzistori
+     LATCbits.LATC13=0;
+     LATCbits.LATC14=1;
+	DRIVE_A = 0;  
+	DRIVE_B = 1;
+
+	Delay_ms(50); //cekamo jedno vreme da se odradi AD konverzija
+	
+	// ocitavamo y	
+	y_vrednost = temp1;// temp1 je vrednost koji nam daje AD konvertor na LEFT pinu	
+	
+//Ako želimo da nam X i Y koordinate budu kao rezolucija ekrana 128x64 treba skalirati vrednosti x_vrednost i y_vrednost tako da budu u opsegu od 0-128 odnosno 0-64
+//skaliranje x-koordinate
+
+    X=(x_vrednost-161)*0.03629;
+
+//X= ((x_vrednost-AD_Xmin)/(AD_Xmax-AD_Xmin))*128;	
+//vrednosti AD_Xmin i AD_Xmax su minimalne i maksimalne vrednosti koje daje AD konvertor za touch panel.
+
+
+//Skaliranje Y-koordinate
+	Y= ((y_vrednost-500)*0.020725);
+
+//	Y= ((y_vrednost-AD_Ymin)/(AD_Ymax-AD_Ymin))*64;
+}
 /*******************************************************************
 //funkcija za kasnjenje u milisekundama
 *********************************************************************/
@@ -51,14 +111,32 @@ void __attribute__((__interrupt__)) _ADCInterrupt(void)
 {
 							
 
-										sirovi0=ADCBUF0;
-										sirovi1=ADCBUF1;
-										
-										
+	sirovi0=ADCBUF0;
+	sirovi1=ADCBUF1;
+    sirovi2=ADCBUF2;
+    sirovi3=ADCBUF3;
+    									
+	temp0=sirovi0;
+	temp1=sirovi1;									
 
     IFS0bits.ADIF = 0;
 
 } 
+void Write_GLCD(unsigned int data)
+{
+    unsigned char temp;
+
+    temp=data/1000;
+    Glcd_PutChar(temp+'0');
+    data=data-temp*1000;
+    temp=data/100;
+    Glcd_PutChar(temp+'0');
+    data=data-temp*100;
+    temp=data/10;
+    Glcd_PutChar(temp+'0');
+    data=data-temp*10;
+    Glcd_PutChar(data+'0');
+}
 
 int main(void) {
     
@@ -74,16 +152,8 @@ int main(void) {
     ADPCFGbits.PCFG6 = 1; //digitalni
     TRISBbits.TRISB6 = 0; //izlaz
     
-    //test pinovi stanja
-    ADPCFGbits.PCFG8 = 1; //digitalni
-    ADPCFGbits.PCFG9 = 1; //digitalni
-    ADPCFGbits.PCFG12 = 1; //digitalni
-    TRISBbits.TRISB8 = 0; //izlaz
-    TRISBbits.TRISB9 = 0; //izlaz
-    TRISBbits.TRISB12 = 0; //izlaz
-    TRISFbits.TRISF6 = 0; //izlaz
-    
-    
+    Delay_ms(20);
+    ConfigureTSPins();
     Delay_ms(20);
     ConfigureLCDPins();
     Delay_ms(20);
@@ -93,6 +163,7 @@ int main(void) {
     
     while(1)
     {
+        
         switch(stanje)
         {
             case init:
@@ -101,9 +172,17 @@ int main(void) {
                 break;
                 
             case ready:
-                if(sirovi0 > 3300)//fotootpornik
-                stanje = brojac;
+                if(sirovi2 > 3100)//fotootpornik
+                {
+                    stanje = brojac;
+                }  
+              
                 //implementirati touch screen aktiviraj
+                Touch_Panel ();
+                if ((X>1)&&(X<128)&& (Y>1)&&(Y<64))
+                {
+                    stanje = brojac;
+                }
                 break;
                 
             case brojac:
@@ -121,7 +200,7 @@ int main(void) {
             case aktivan:
                 GLCD_DisplayPicture(aktiviran);
         
-                if(sirovi1 > 2500)//senzor za dim
+                if(sirovi3 > 2500)//senzor za dim
                 {   
                     GLCD_DisplayPicture(dim);
                     Delay_ms(2000);
@@ -148,13 +227,28 @@ int main(void) {
                 break;
             case z_vrata:
                     GLCD_DisplayPicture(zatvori_vrata);
+                    Touch_Panel ();
+                    if ((X>1)&&(X<128)&& (Y>1)&&(Y<64))
+                    {
+                        for(i = 0; i<10; i++)
+                        {
+                            LATBbits.LATB6 = 1;
+                            Delay_ms(1);
+                            LATBbits.LATB6 = 0;
+                            Delay_ms(19);
+                        }
+                        stanje = init;
+                    }
                 break;
                 
             case sirena:
                 GLCD_DisplayPicture(ugasi_sirenu);
+                Touch_Panel ();
+                if ((X>1)&&(X<128)&& (Y>1)&&(Y<64))
+                    {
+                        stanje = init;
+                    }
                 
-                //touch screen zatvori vrata
-                //touch screen ugasi sirenu
                 break;
                
                 
