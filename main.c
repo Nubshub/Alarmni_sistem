@@ -22,22 +22,28 @@ _FOSC(CSW_FSCM_OFF & XT_PLL4);//instruction takt je isti kao i kristal
 _FWDT(WDT_OFF);
 _FGS(CODE_PROT_OFF);
 
+//PROMENLJIVE
+//**********************************************************************************
 enum state {init, ready, brojac, aktivan, sirena, vrata, z_vrata };
 enum state stanje = init;
 
 unsigned int sirovi0,sirovi1,sirovi2,sirovi3,stoperica, i;
 unsigned int X, Y,x_vrednost, y_vrednost;
-
-
-//const unsigned int ADC_THRESHOLD = 900; 
+ 
 const unsigned int AD_Xmin =220;
 const unsigned int AD_Xmax =3642;
 const unsigned int AD_Ymin =520;
 const unsigned int AD_Ymax =3450;
 
 unsigned int broj,broj1,broj2,temp0,temp1; 
+unsigned int n,temp; 
+char tempRX[5] = {0,0,0,0,0};
+//**********************************************************************************
 
 
+
+//TOUCH SCREEN
+//**********************************************************************************
 void ConfigureTSPins(void)
 {
 
@@ -85,43 +91,6 @@ void Touch_Panel (void)
 
 //	Y= ((y_vrednost-AD_Ymin)/(AD_Ymax-AD_Ymin))*64;
 }
-/*******************************************************************
-//funkcija za kasnjenje u milisekundama
-*********************************************************************/
-void Delay_ms (int vreme)//funkcija za kasnjenje u milisekundama
-	{
-		stoperica = 0;
-		while(stoperica < vreme);
-	}
-
-
-
-void __attribute__ ((__interrupt__)) _T2Interrupt(void) // svakih 1ms
-{
-
-	TMR2 =0;
-
-    stoperica++;//brojac za funkciju Delay_ms
-
-	IFS0bits.T2IF = 0; 
-       
-}
-
-void __attribute__((__interrupt__)) _ADCInterrupt(void) 
-{
-							
-
-	sirovi0=ADCBUF0;
-	sirovi1=ADCBUF1;
-    sirovi2=ADCBUF2;
-    sirovi3=ADCBUF3;
-    									
-	temp0=sirovi0;
-	temp1=sirovi1;									
-
-    IFS0bits.ADIF = 0;
-
-} 
 void Write_GLCD(unsigned int data)
 {
     unsigned char temp;
@@ -137,12 +106,137 @@ void Write_GLCD(unsigned int data)
     data=data-temp*10;
     Glcd_PutChar(data+'0');
 }
+//**********************************************************************************
+
+
+
+//TAJMER
+//**********************************************************************************
+void Delay_ms (int vreme)//funkcija za kasnjenje u milisekundama
+{
+	stoperica = 0;
+	while(stoperica < vreme);
+}
+
+
+void __attribute__ ((__interrupt__)) _T2Interrupt(void) // svakih 1ms
+{
+
+	TMR2 =0;
+
+    stoperica++;//brojac za funkciju Delay_ms
+
+	IFS0bits.T2IF = 0; 
+       
+}
+//**********************************************************************************
+
+
+//AD KONVERZIJA
+//**********************************************************************************
+void __attribute__((__interrupt__)) _ADCInterrupt(void) 
+{
+							
+
+	sirovi0=ADCBUF0;
+	sirovi1=ADCBUF1;
+    sirovi2=ADCBUF2;
+    sirovi3=ADCBUF3;
+    									
+	temp0=sirovi0;
+	temp1=sirovi1;									
+
+    IFS0bits.ADIF = 0;
+
+} 
+//**********************************************************************************
+
+
+//SERIJSKA KOMUNIKACIJA
+//**********************************************************************************
+void initUART1(void)
+{
+    U1BRG=0x0015;//odredjivanje baudrate-a
+
+    U1MODEbits.ALTIO=0;//koristimo osnovne pinove za komunikaciju RF2,RF3
+
+    IEC0bits.U1RXIE=1;
+
+    U1STA&=0xfffc;
+
+    U1MODEbits.UARTEN=1;
+
+    U1STAbits.UTXEN=1;
+}
+
+
+void __attribute__((__interrupt__)) _U1RXInterrupt(void) 
+{
+    IFS0bits.U1RXIF = 0;  
+    temp = U1RXREG;
+    if(temp!=0)
+    {
+        
+        tempRX[n] = temp;
+        if(n<4) n++; 
+        else 
+            n = 0; 
+    }
+} 
+
+
+void WriteUART1(unsigned int data)   
+{
+	while(!U1STAbits.TRMT);    
+
+    if(U1MODEbits.PDSEL == 3)    
+        U1TXREG = data;          
+    else
+        U1TXREG = data & 0xFF; 
+}
+
+
+void RS232_putst(register const char *str){
+    
+  while((*str)!=0) 
+  {
+    WriteUART1(*str);
+        if (*str==13) WriteUART1(10);
+        if (*str==10) WriteUART1(13);
+    str++;
+  }
+}
+void WriteUART1dec2string(unsigned int data)
+{
+	unsigned char temp;
+
+	temp=data/1000;
+	WriteUART1(temp+'0');
+	data=data-temp*1000;
+	temp=data/100;
+	WriteUART1(temp+'0');
+	data=data-temp*100;
+	temp=data/10;
+	WriteUART1(temp+'0');
+	data=data-temp*10;
+	WriteUART1(data+'0');
+}
+//**********************************************************************************
 
 int main(void) {
     
+    //inicijalizacija
     ADCinit();
     Init_T2();
     ADCON1bits.ADON=1;//pocetak Ad konverzije 
+    Delay_ms(20);
+    ConfigureTSPins();
+    Delay_ms(20);
+    ConfigureLCDPins();
+    Delay_ms(20);
+    GLCD_LcdInit();
+    Delay_ms(20);
+    GLCD_ClrScr();
     
     //pin za PIR senzor
     ADPCFGbits.PCFG7 = 1; //digitalni
@@ -152,14 +246,7 @@ int main(void) {
     ADPCFGbits.PCFG6 = 1; //digitalni
     TRISBbits.TRISB6 = 0; //izlaz
     
-    Delay_ms(20);
-    ConfigureTSPins();
-    Delay_ms(20);
-    ConfigureLCDPins();
-    Delay_ms(20);
-    GLCD_LcdInit();
-    Delay_ms(20);
-    GLCD_ClrScr();
+    
     
     while(1)
     {
@@ -177,7 +264,7 @@ int main(void) {
                     stanje = brojac;
                 }  
               
-                //implementirati touch screen aktiviraj
+                
                 Touch_Panel ();
                 if ((X>1)&&(X<128)&& (Y>1)&&(Y<64))
                 {
@@ -200,11 +287,21 @@ int main(void) {
             case aktivan:
                 GLCD_DisplayPicture(aktiviran);
         
-                if(sirovi3 > 2500)//senzor za dim
+                if(sirovi3 > 1000)//senzor za dim
                 {   
+                    int j;
+                    j = 0;
                     GLCD_DisplayPicture(dim);
-                    Delay_ms(2000);
-                    stanje = vrata;
+                    
+                    while(j <= 4)
+                    {
+                        RS232_putst("KOLI?INA DIMA (max = 4095): ");
+                        WriteUART1dec2string(sirovi3);
+                        WriteUART1(13);//enter
+                        Delay_ms(500);
+                        j++;
+                    }
+                        stanje = vrata;
                 }
                 else if(PORTBbits.RB7 == 1)//senzor pokreta
                  {
