@@ -37,7 +37,7 @@ const unsigned int AD_Ymax =3450;
 
 unsigned int broj,broj1,broj2,temp0,temp1; 
 unsigned int n,temp; 
-char tempRX[5] = {0,0,0,0,0};
+unsigned char tempRX;
 //**********************************************************************************
 
 
@@ -156,55 +156,46 @@ void __attribute__((__interrupt__)) _ADCInterrupt(void)
 //**********************************************************************************
 void initUART1(void)
 {
-    U1BRG=0x0015;//odredjivanje baudrate-a
+    U1BRG=0x0040;//ovim odredjujemo baudrate 9600
 
-    U1MODEbits.ALTIO=0;//koristimo osnovne pinove za komunikaciju RF2,RF3
+    U1MODEbits.ALTIO=0;//biramo koje pinove koristimo za komunikaciju osnovne ili alternativne
 
-    IEC0bits.U1RXIE=1;
+    IEC0bits.U1RXIE=1;//omogucavamo rx1 interupt
 
     U1STA&=0xfffc;
 
-    U1MODEbits.UARTEN=1;
+    U1MODEbits.UARTEN=1;//ukljucujemo ovaj modul
 
-    U1STAbits.UTXEN=1;
+    U1STAbits.UTXEN=1;//ukljucujemo predaju
 }
 
 
 void __attribute__((__interrupt__)) _U1RXInterrupt(void) 
 {
-    IFS0bits.U1RXIF = 0;  
-    temp = U1RXREG;
-    if(temp!=0)
-    {
-        
-        tempRX[n] = temp;
-        if(n<4) n++; 
-        else 
-            n = 0; 
-    }
+    IFS0bits.U1RXIF = 0;
+    //tempRX=U1RXREG;
 } 
 
 
-void WriteUART1(unsigned int data)   
+void WriteUART1(unsigned int data)
 {
-	while(!U1STAbits.TRMT);    
+	  while(!U1STAbits.TRMT);
 
-    if(U1MODEbits.PDSEL == 3)    
-        U1TXREG = data;          
+    if(U1MODEbits.PDSEL == 3)
+        U1TXREG = data;
     else
-        U1TXREG = data & 0xFF; 
+        U1TXREG = data & 0xFF;
 }
 
-
-void RS232_putst(register const char *str){
-    
-  while((*str)!=0) 
-  {
-    WriteUART1(*str);
-        if (*str==13) WriteUART1(10);
-        if (*str==10) WriteUART1(13);
-    str++;
-  }
+void RS232_putst(register const char *str)
+{
+    while((*str)!=0)
+    {
+        WriteUART1(*str);
+        if(*str==13)WriteUART1(10);
+        if(*str==10)WriteUART1(13);
+        str++;
+    }
 }
 void WriteUART1dec2string(unsigned int data)
 {
@@ -228,6 +219,7 @@ int main(void) {
     //inicijalizacija
     ADCinit();
     Init_T2();
+    initUART1();
     ADCON1bits.ADON=1;//pocetak Ad konverzije 
     Delay_ms(20);
     ConfigureTSPins();
@@ -255,6 +247,7 @@ int main(void) {
         {
             case init:
                 GLCD_DisplayPicture(aktiviraj); 
+                
                 stanje = ready;
                 break;
                 
@@ -292,16 +285,18 @@ int main(void) {
                     int j;
                     j = 0;
                     GLCD_DisplayPicture(dim);
+                    RS232_putst("KOLICINA DIMA (max 4095): ");
+                    WriteUART1(13);
                     
-                    while(j <= 4)
+                    while(j < 4)
                     {
-                        RS232_putst("KOLI?INA DIMA (max = 4095): ");
+                        
                         WriteUART1dec2string(sirovi3);
-                        WriteUART1(13);//enter
-                        Delay_ms(500);
+                        WriteUART1(13);
+                        Delay_ms(1000);
                         j++;
                     }
-                        stanje = vrata;
+                    stanje = vrata;
                 }
                 else if(PORTBbits.RB7 == 1)//senzor pokreta
                  {
