@@ -238,6 +238,8 @@ int main(void) {
     ADPCFGbits.PCFG6 = 1; //digitalni
     TRISBbits.TRISB6 = 0; //izlaz
     
+    //pin za buzzer
+    TRISFbits.TRISF6 = 0; //izlaz
     
     
     while(1)
@@ -247,7 +249,7 @@ int main(void) {
         {
             case init:
                 GLCD_DisplayPicture(aktiviraj); 
-                
+                LATFbits.LATF6 = 0;
                 stanje = ready;
                 break;
                 
@@ -335,6 +337,7 @@ int main(void) {
                 
             case sirena:
                 GLCD_DisplayPicture(ugasi_sirenu);
+                LATFbits.LATF6 = 1;
                 Touch_Panel ();
                 if ((X>1)&&(X<128)&& (Y>1)&&(Y<64))
                     {
